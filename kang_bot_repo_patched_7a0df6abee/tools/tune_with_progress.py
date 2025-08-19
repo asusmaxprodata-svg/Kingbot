@@ -5,14 +5,8 @@ from pathlib import Path
 # Wrapper untuk menjalankan tune_xgb_optuna.py per-chunk dan kirim progress ke Telegram
 def tg_send(msg: str):
     try:
-        import requests
-        tok = os.getenv("TELEGRAM_BOT_TOKEN", "")
-        chat = os.getenv("TELEGRAM_CHAT_ID", "")
-        if not tok or not chat: 
-            return False
-        url = f"https://api.telegram.org/bot{tok}/sendMessage"
-        r = requests.post(url, json={"chat_id": chat, "text": msg, "parse_mode": "HTML", "disable_web_page_preview": True}, timeout=15)
-        return r.status_code==200
+        from core.notifier import telegram_send
+        return telegram_send(msg, parse_mode="HTML", disable_web_page_preview=True, timeout_sec=15)
     except Exception:
         return False
 

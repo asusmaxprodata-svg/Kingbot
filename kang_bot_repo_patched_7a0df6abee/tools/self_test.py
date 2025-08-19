@@ -27,17 +27,14 @@ def check_env():
     _ok("ENV presence (BYBIT_TESTNET, TELEGRAM_*)")
 
 def ping_telegram():
-    import requests
-    t = os.getenv("TELEGRAM_BOT_TOKEN"); c = os.getenv("TELEGRAM_CHAT_ID") or os.getenv("TELEGRAM_ADMIN_USER_ID")
-    if not t or not c:
-        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN/CHAT_ID for ping")
-    r = requests.get(
-        f"https://api.telegram.org/bot{t}/sendMessage",
-        params={"chat_id": c, "text": "🧪 Self-test: Telegram OK"},
-        timeout=15,
-    )
-    r.raise_for_status()
-    _ok("Telegram ping")
+    try:
+        from core.notifier import telegram_send
+        ok = telegram_send("🧪 Self-test: Telegram OK", timeout_sec=15)
+        if not ok:
+            raise RuntimeError("telegram_send returned False")
+        _ok("Telegram ping")
+    except Exception as e:
+        raise
 
 def bybit_public():
     from pybit.unified_trading import HTTP

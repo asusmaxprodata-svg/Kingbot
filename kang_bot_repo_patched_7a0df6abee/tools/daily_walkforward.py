@@ -16,9 +16,7 @@ def run_mode(mode):
         return {"mode": mode, "raw": p.stdout[-400:]}
 
 def maybe_tg_send(summary):
-    tok = os.getenv("TELEGRAM_BOT_TOKEN"); chat = os.getenv("TELEGRAM_ADMIN_USER_ID")
-    if not tok or not chat: return
-    import requests
+    from core.notifier import telegram_send
     lines = ["*Walk-Forward Summary*"]
     for m, s in summary.items():
         if "error" in s:
@@ -28,16 +26,9 @@ def maybe_tg_send(summary):
             trades = s.get("trades",0); eq = s.get("equity_final",1.0)
             lines.append(f"• {m}: trades={trades}, wr={wr:.1f}%, equity={eq:.3f}")
     text = "\n".join(lines)
-    try:
-        r = requests.post(
-            f"https://api.telegram.org/bot{tok}/sendMessage",
-            json={"chat_id": chat, "text": text, "parse_mode": "Markdown"},
-            timeout=15,
-        )
-        if r.status_code >= 400:
-            print(f"[WARN] Telegram send failed: {r.status_code} {r.text[:200]}")
-    except Exception as e:
-        print(f"[WARN] Telegram send exception: {e}")
+    ok = telegram_send(text, parse_mode="Markdown", timeout_sec=15)
+    if not ok:
+        print("[WARN] Telegram send failed (maybe_tg_send)")
 
 def main():
     res = {}

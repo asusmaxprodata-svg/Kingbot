@@ -1,21 +1,17 @@
-import os, json, datetime as dt, requests
+import os, json, datetime as dt
 from pathlib import Path
 import utils.env_loader  # auto-load .env
 
 BASE = Path(__file__).resolve().parents[1]
 
 def tg_send(text: str):
-    tok = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat = os.getenv("TELEGRAM_ADMIN_USER_ID") or os.getenv("TELEGRAM_CHAT_ID")
-    if not tok or not chat: 
-        print("[WARN] Missing TELEGRAM env, printing instead:\n"+text)
-        return
-    url = f"https://api.telegram.org/bot{tok}/sendMessage"
     try:
-        resp = requests.post(url, json={"chat_id": chat, "text": text, "parse_mode": "Markdown"}, timeout=15)
-        print("Telegram status:", resp.status_code, resp.text[:120])
+        from core.notifier import telegram_send
+        ok = telegram_send(text, parse_mode="Markdown", timeout_sec=15)
+        if not ok:
+            print("[WARN] Telegram send failed (daily_report)")
     except Exception as e:
-        print("[WARN] Telegram request failed:", e)
+        print("[WARN] Telegram helper failed:", e)
 
 def main():
     try:
