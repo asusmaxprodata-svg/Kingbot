@@ -1,0 +1,155 @@
+import os, json
+from pathlib import Path
+from typing import Dict, Any
+import numpy as np
+import pandas as pd
+
+from .logger import get_logger
+from .utils import load_json
+
+log = get_logger("ai_signal")
+
+# --- Helpers ---
+
+def _adaptive_threshold_from_history(default: float = 0.80) -> float:
+    """Estimate threshold from recent winrate in profit.json (last 100 closed)."""
+    try:
+        d = load_json("data/profit.json", {})
+        hist = d.get("history", [])
+        closed = [h for h in hist if h.get("status") == "CLOSED"]
+        if not closed:
+            return default
+        last = closed[-100:]
+        wins = sum(1 for h in last if h.get("pnl", 0) > 0)
+        wr = wins / max(1, len(last))
+        # Map winrate to threshold window [0.70, 0.90]
+        return float(max(0.70, min(0.90, 0.90 - 0.2 * (wr - 0.5))))
+    except Exception as e:
+        log.warning(f"adaptive threshold failed: {e}")
+        return default
+
+def _load_xgb_model(mode: str):
+    """Load calibrated sklearn model (joblib) or raw Booster json as fallback."""
+    try:
+        import joblib
+        jpath = Path(__file__).resolve().parents[1] / f"models/xgb_{mode}.joblib"
+        if jpath.exists():
+            obj = joblib.load(jpath)
+            return obj
+    except Exception as e:
+        log.warning(f"joblib load failed: {e}")
+    # Fallback: raw booster json (optional)
+    try:
+        import xgboost as xgb
+        bpath = Path(__file__).resolve().parents[1] / f"models/xgb_{mode}.json"
+        if bpath.exists():
+            booster = xgb.Booster()
+            booster.load_model(str(bpath))
+            return booster
+    except Exception as e:
+        log.warning(f"xgb booster load failed: {e}")
+    return None
+
+def _xgb_predict(model, row_df: pd.DataFrame) -> float:
+    try:
+        # sklearn calibrator path
+        if isinstance(model, dict) and "model" in model:
+            clf = model["model"]
+            # align columns if necessary
+            cols = getattr(clf, "feature_names_in_", None)
+            X = row_df[cols] if cols is not None else row_df
+            p = clf.predict_proba(X.tail(1))[:, 1][0]
+            return float(max(0.0, min(1.0, p)))
+        # raw booster path
+        import xgboost as xgb
+        d = xgb.DMatrix(row_df.tail(1))
+        p = float(xgb.Booster.predict(model, d)[0]) if hasattr(model, "predict") else float(model.predict(d)[0])
+        return float(max(0.0, min(1.0, p)))
+    except Exception as e:
+        log.warning(f"xgb predict failed: {e}")
+        return 0.5
+
+def _gpt_analyze(features_row: Dict[str, float]) -> Dict[str, Any]:
+    """Lightweight heuristic to emulate GPT analysis offline."""
+    # Use simple momentum/vol heuristic so function is deterministic offline
+    close = features_row.get("close", 0.0)
+    ema_fast = features_row.get("ema_fast", close)
+    ema_slow = features_row.get("ema_slow", close)
+    vol = abs(features_row.get("vol", 0.002))
+    momentum = features_row.get("macd_hist", 0.0)
+    bias_raw = 0.5 + 0.2 * np.tanh((ema_fast - ema_slow) / (abs(ema_slow) + 1e-9)) + 0.1 * np.tanh(momentum / 5.0)
+    conf_raw = 0.6 + 0.3 * np.tanh((abs(ema_fast - ema_slow) / (abs(ema_slow) + 1e-9)) / (0.002 + vol))
+    bias = float(max(0.0, min(1.0, bias_raw)))
+    conf = float(max(0.0, min(1.0, conf_raw)))
+    # suggested tp/sl base
+    tp = float(max(0.005, min(0.03, 0.02 * (1 + vol*10))))
+    sl = float(max(0.003, min(0.02, tp / 2)))
+    lev = int( max(5, min(50, int(10 + 80 * (conf - 0.6)))) )
+    return {"bias": bias, "conf": conf, "tp": tp, "sl": sl, "leverage": lev}
+
+def _expected_edge(prob: float, tp: float, sl: float, fee_rt: float, slip_rt: float, spread_bps: float = 0.0) -> float:
+    spread_rt = (spread_bps / 10000.0)
+    return prob * tp - (1.0 - prob) * sl - fee_rt - 2.0 * slip_rt - spread_rt
+
+# --- Public API ---
+
+def combine_signals(mode: str, df: pd.DataFrame, cfg: Dict[str, Any], *, symbol: str, testnet: bool) -> Dict[str, Any]:
+    """Return unified signal dict.
+    Output: {action, tp, sl, leverage, confidence, meta}
+    """
+    if df is None or df.empty:
+        return {"action": "SKIP", "tp": 0.0, "sl": 0.0, "leverage": 0, "confidence": 0.0, "meta": {"reason": "empty_df"}}
+
+    row = df.tail(1).iloc[0].to_dict()
+    gpt = _gpt_analyze(row)
+
+    # XGB path
+    xgb_model = _load_xgb_model(mode)
+    # Build numeric feature row
+    frow = df.select_dtypes(include="number").tail(1)
+    xgb_prob = _xgb_predict(xgb_model, frow) if xgb_model is not None else gpt["bias"]
+
+    # Combine
+    w_xgb, w_gpt = 0.6, 0.4
+    bias_combined = float(max(0.0, min(1.0, w_xgb * xgb_prob + w_gpt * gpt["bias"])))
+    confidence = float(max(0.0, min(1.0, 0.5 * (xgb_prob + gpt["conf"]))))
+
+    # TP/SL/Lev pick
+    tp = float(cfg.get("tp", gpt["tp"]))
+    sl = float(cfg.get("sl", gpt["sl"]))
+    _lev = cfg.get("leverage", gpt["leverage"]) 
+    lev = int(gpt["leverage"]) if str(_lev).lower() in ("auto","ai","none","null") else int(_lev)
+
+    # Basic direction
+    action = "BUY" if bias_combined > 0.55 else ("SELL" if bias_combined < 0.45 else "SKIP")
+
+    # Per-mode dynamic threshold
+    if mode == "scalping":
+        thr = 0.85
+    elif mode in ("swing", "hybrid"):
+        thr = 0.75
+    elif mode == "adaptif":
+        thr = _adaptive_threshold_from_history()
+    else:
+        thr = 0.80
+
+    # Edge gate
+    fee_rt = float(cfg.get("fee_rt", 0.0006))
+    slip_rt = float(cfg.get("slip_rt", 0.0003))
+    spread_bps = float(cfg.get("spread_bps", 1.5))
+    ev = _expected_edge(bias_combined, tp, sl, fee_rt, slip_rt, spread_bps)
+
+    meta = {
+        "mode_final": mode,
+        "xgb_prob": xgb_prob,
+        "gpt_conf": gpt["conf"],
+        "bias_combined": bias_combined,
+        "ev": ev,
+        "spread_ok": True,
+        "spread_bps": spread_bps
+    }
+
+    if confidence < thr or ev < float(cfg.get("min_edge_bps", 5.0)) / 10000.0:
+        return {"action": "SKIP", "tp": tp, "sl": sl, "leverage": lev, "confidence": confidence, "meta": meta}
+
+    return {"action": action, "tp": tp, "sl": sl, "leverage": lev, "confidence": confidence, "meta": meta}

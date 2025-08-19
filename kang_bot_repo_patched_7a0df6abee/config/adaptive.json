@@ -1,0 +1,27 @@
+{
+  "name": "adaptive",
+  "timeframe": "15m",
+  "tp": 0.02,
+  "sl": 0.01,
+  "rule_switch_lookback_trades": 20,
+  "xgb": {
+    "threshold": 0.5
+  },
+  "leverage": "auto",
+  "vol_low": 0.0015,
+  "vol_high": 0.02,
+  "mtf": {
+    "confirm_tf": "60m"
+  },
+  "tp_ratio": {
+    "tp1": 0.5,
+    "tp2": 0.5
+  },
+  "tp_split": {
+    "tp1": 0.5,
+    "tp2": 0.5,
+    "breakeven_trigger": 0.5
+  },
+  "confidence_threshold": 0.6,
+  "min_edge_bps": 5.0
+}

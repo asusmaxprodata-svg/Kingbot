@@ -1,0 +1,38 @@
+{
+  "name": "hybrid",
+  "timeframe": "15m",
+  "tp": 0.02,
+  "sl": 0.01,
+  "indicators": {
+    "ema_fast": 9,
+    "ema_slow": 50,
+    "rsi": 14,
+    "macd_fast": 12,
+    "macd_slow": 26,
+    "macd_signal": 9
+  },
+  "xgb": {
+    "threshold": 0.5
+  },
+  "leverage": "auto",
+  "vol_gates": {
+    "hybrid": [
+      0.0015,
+      0.03
+    ]
+  },
+  "mtf": {
+    "confirm_tf": "60m"
+  },
+  "tp_ratio": {
+    "tp1": 0.5,
+    "tp2": 0.5
+  },
+  "tp_split": {
+    "tp1": 0.5,
+    "tp2": 0.5,
+    "breakeven_trigger": 0.5
+  },
+  "confidence_threshold": 0.6,
+  "min_edge_bps": 5.0
+}

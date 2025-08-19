@@ -1,0 +1,37 @@
+{
+  "name": "scalping",
+  "timeframe": "5m",
+  "tp": 0.012,
+  "sl": 0.008,
+  "indicators": {
+    "ema_fast": 9,
+    "ema_slow": 21,
+    "rsi": 14
+  },
+  "xgb": {
+    "threshold": 0.5
+  },
+  "leverage": "auto",
+  "vol_gates": {
+    "scalping": [
+      0.002,
+      0.025
+    ]
+  },
+  "tp_ratio": {
+    "tp1": 0.5,
+    "tp2": 0.5
+  },
+  "tp_split": {
+    "tp1": 0.6,
+    "tp2": 0.4,
+    "breakeven_trigger": 0.4
+  },
+  "confidence_threshold": 0.83,
+  "min_edge_bps": 3.0,
+  "max_leverage": 20,
+  "cooldown_bars": 3,
+  "fee_rt": 0.0006,
+  "slip_rt": 0.0003,
+  "spread_bps": 1.5
+}
