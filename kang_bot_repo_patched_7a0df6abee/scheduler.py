@@ -1,5 +1,6 @@
 
 import os
+import sys
 import threading
 import subprocess
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -24,7 +25,7 @@ def _run_tuner_once_multi(symbols, timeframe, trials, chunk, extra_args=""):
     except Exception:
         pass
     for symbol in symbols:
-        cmd = [os.environ.get("PYTHON","python"), "tools/tune_with_progress.py",
+        cmd = [sys.executable, "tools/tune_with_progress.py",
                "--mode","swing","--symbol",symbol,"--timeframe",timeframe,
                "--trials",str(trials),"--chunk",str(chunk)]
         if extra_args:

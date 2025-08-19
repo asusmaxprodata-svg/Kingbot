@@ -6,16 +6,22 @@ BASE = Path(__file__).resolve().parents[1]
 
 def tg_send(text: str):
     tok = os.getenv("TELEGRAM_BOT_TOKEN")
-    chat = os.getenv("TELEGRAM_ADMIN_USER_ID")
+    chat = os.getenv("TELEGRAM_ADMIN_USER_ID") or os.getenv("TELEGRAM_CHAT_ID")
     if not tok or not chat: 
         print("[WARN] Missing TELEGRAM env, printing instead:\n"+text)
         return
     url = f"https://api.telegram.org/bot{tok}/sendMessage"
-    resp = requests.post(url, json={"chat_id": chat, "text": text, "parse_mode": "Markdown"})
-    print("Telegram status:", resp.status_code, resp.text[:120])
+    try:
+        resp = requests.post(url, json={"chat_id": chat, "text": text, "parse_mode": "Markdown"}, timeout=15)
+        print("Telegram status:", resp.status_code, resp.text[:120])
+    except Exception as e:
+        print("[WARN] Telegram request failed:", e)
 
 def main():
-    prof = json.loads((BASE/"data/profit.json").read_text(encoding="utf-8"))
+    try:
+        prof = json.loads((BASE/"data/profit.json").read_text(encoding="utf-8"))
+    except Exception:
+        prof = {"history": []}
     hist = prof.get("history", [])
     today = dt.datetime.utcnow().date()
     day_trades = [h for h in hist if h.get("closed_at","")[:10] == str(today)]
@@ -23,7 +29,10 @@ def main():
     wins = sum(1 for h in day_trades if h.get("pnl",0)>0)
     total = len(day_trades)
     wr = (wins/max(1,total))*100
-    st = json.loads((BASE/"data/state.json").read_text(encoding="utf-8"))
+    try:
+        st = json.loads((BASE/"data/state.json").read_text(encoding="utf-8"))
+    except Exception:
+        st = {}
     mode = st.get("mode","hybrid")
     env = "REAL" if not st.get("testnet", True) else "TESTNET"
     sim = "ON" if st.get("simulation_mode", False) else "OFF"

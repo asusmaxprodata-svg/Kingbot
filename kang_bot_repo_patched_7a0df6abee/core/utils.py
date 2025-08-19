@@ -101,12 +101,12 @@ def sync_bybit_closed_pnl(symbols, testnet: bool = True):
                     if h.get('uid') == uid:
                         h['pnl'] = pnl
                         h['status'] = 'CLOSED'
-                        h['ts_close'] = datetime.datetime.utcfromtimestamp(float(ts)/1000.0).isoformat()+"Z"
+                        h['ts_close'] = datetime.utcfromtimestamp(float(ts)/1000.0).isoformat()+"Z"
                         break
                 continue
             trade = {
                 "uid": uid, "symbol": sym,
-                "pnl": pnl, "ts_epoch": float(ts)/1000.0, "ts": datetime.datetime.utcfromtimestamp(float(ts)/1000.0).isoformat()+"Z",
+                "pnl": pnl, "ts_epoch": float(ts)/1000.0, "ts": datetime.utcfromtimestamp(float(ts)/1000.0).isoformat()+"Z",
                 "status": "CLOSED"
             }
             data["history"].append(trade)

@@ -28,8 +28,14 @@ def check_env():
 
 def ping_telegram():
     import requests
-    t = os.environ["TELEGRAM_BOT_TOKEN"]; c = os.environ["TELEGRAM_CHAT_ID"]
-    r = requests.get(f"https://api.telegram.org/bot{t}/sendMessage", params={"chat_id": c, "text": "🧪 Self-test: Telegram OK"})
+    t = os.getenv("TELEGRAM_BOT_TOKEN"); c = os.getenv("TELEGRAM_CHAT_ID") or os.getenv("TELEGRAM_ADMIN_USER_ID")
+    if not t or not c:
+        raise RuntimeError("Missing TELEGRAM_BOT_TOKEN/CHAT_ID for ping")
+    r = requests.get(
+        f"https://api.telegram.org/bot{t}/sendMessage",
+        params={"chat_id": c, "text": "🧪 Self-test: Telegram OK"},
+        timeout=15,
+    )
     r.raise_for_status()
     _ok("Telegram ping")
 

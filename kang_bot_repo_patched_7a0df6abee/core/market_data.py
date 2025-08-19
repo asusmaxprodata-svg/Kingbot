@@ -1,5 +1,9 @@
 
 import requests, time
+try:
+    from core.ai_signal import llm_context_score as _llm_ctx_score
+except Exception:
+    _llm_ctx_score = None
 from typing import Dict, Any
 
 def bybit_base(testnet: bool) -> str:
@@ -25,6 +29,8 @@ def get_orderbook(symbol: str, testnet: bool=True, category: str="linear", limit
 # Optional: LLM context feature (fallback 0.0 if fails)
 def _llm_context_feature(symbol: str, snapshot: dict) -> float:
     try:
-        return float(llm_context_score(symbol, snapshot))
+        if _llm_ctx_score is None:
+            return 0.0
+        return float(_llm_ctx_score(symbol, snapshot))
     except Exception:
         return 0.0
