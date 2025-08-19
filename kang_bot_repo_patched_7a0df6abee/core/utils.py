@@ -208,7 +208,7 @@ def telegram_admin_id() -> int:
 def check_and_notify_cooldown():
     """Send Telegram message on cooldown start/end transitions."""
     from .logger import get_logger
-    from .notifier import telegram_send_direct
+    from .notifier import telegram_send
     log = get_logger("cooldown_notify")
     state = load_json("data/state.json", {})
     now = time.time()
@@ -220,14 +220,14 @@ def check_and_notify_cooldown():
         # Active cooldown
         if not started_sent and admin:
             mins = int((until - now) / 60) + 1
-            telegram_send_direct(f"[kang_bot] Cooldown aktif {mins} menit (loss-streak).")
+            telegram_send(f"[kang_bot] Cooldown aktif {mins} menit (loss-streak).")
             state["cooldown_notified_start"] = True
             state["cooldown_notified_clear"] = False
             save_json("data/state.json", state)
     elif until > 0:
         # Cooldown ended
         if not clear_sent and admin:
-            telegram_send_direct("[kang_bot] Cooldown berakhir — trading dilanjutkan.")
+            telegram_send("[kang_bot] Cooldown berakhir — trading dilanjutkan.")
             state["cooldown_notified_clear"] = True
             save_json("data/state.json", state)
 

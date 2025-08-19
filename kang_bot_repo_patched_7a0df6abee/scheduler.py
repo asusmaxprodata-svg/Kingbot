@@ -6,7 +6,7 @@ import subprocess
 from apscheduler.schedulers.background import BackgroundScheduler
 from core.utils import load_json
 from core.symbol_scanner import rank_symbols
-from core.notifier import telegram_send_direct
+from core.notifier import telegram_send
 
 _scheduler_ref = None
 
@@ -21,7 +21,7 @@ def _pick_symbols(cfg):
 
 def _run_tuner_once_multi(symbols, timeframe, trials, chunk, extra_args=""):
     try:
-        telegram_send_direct(f"🧪 Auto-Tune Swing dimulai • {', '.join(symbols)} • {timeframe} • {trials} trials")
+        telegram_send(f"🧪 Auto-Tune Swing dimulai • {', '.join(symbols)} • {timeframe} • {trials} trials")
     except Exception:
         pass
     for symbol in symbols:
@@ -33,16 +33,16 @@ def _run_tuner_once_multi(symbols, timeframe, trials, chunk, extra_args=""):
         try:
             subprocess.run(cmd, check=True)
             try:
-                telegram_send_direct(f"✅ Tuning selesai untuk {symbol}")
+                telegram_send(f"✅ Tuning selesai untuk {symbol}")
             except Exception:
                 pass
         except Exception as e:
             try:
-                telegram_send_direct(f"⚠️ Auto-Tune gagal untuk {symbol}: {e}")
+                telegram_send(f"⚠️ Auto-Tune gagal untuk {symbol}: {e}")
             except Exception:
                 pass
     try:
-        telegram_send_direct("✅ Auto-Tune batch selesai.")
+        telegram_send("✅ Auto-Tune batch selesai.")
     except Exception:
         pass
     return True
@@ -66,7 +66,7 @@ def start_scheduler():
     scheduler.start()
     _scheduler_ref = scheduler
     try:
-        telegram_send_direct(f"⏰ Auto-Tune Harian aktif (WIB {hour:02d}:{minute:02d})")
+        telegram_send(f"⏰ Auto-Tune Harian aktif (WIB {hour:02d}:{minute:02d})")
     except Exception:
         pass
     return scheduler
@@ -94,7 +94,7 @@ def reschedule_autotune():
         scheduler.start()
         _scheduler_ref = scheduler
         try:
-            telegram_send_direct(f"🕒 Jadwal Auto-Tune diperbarui ke {hour:02d}:{minute:02d} WIB")
+            telegram_send(f"🕒 Jadwal Auto-Tune diperbarui ke {hour:02d}:{minute:02d} WIB")
         except Exception:
             pass
         return True

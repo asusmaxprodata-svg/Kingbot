@@ -1,7 +1,7 @@
 from typing import Dict
 from .utils import risk_check, load_json, save_json, sync_bybit_closed_pnl, cooldown_active, update_loss_streak_on_new_trades
 from .logger import get_logger
-from .notifier import telegram_send_direct
+from .notifier import telegram_send
 log = get_logger("risk")
 
 def can_trade() -> Dict:
@@ -14,7 +14,7 @@ def can_trade() -> Dict:
         if eq < float(g.get("equity_floor", 0)):
             state["testnet"] = True
             try:
-                telegram_send_direct(f"[kang_bot] Equity {eq:.2f} < floor → auto switch ke TESTNET.")
+                telegram_send(f"[kang_bot] Equity {eq:.2f} < floor → auto switch ke TESTNET.")
             except Exception:
                 pass
             save_json("data/state.json", state)

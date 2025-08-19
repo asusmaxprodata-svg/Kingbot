@@ -13,13 +13,15 @@ from core.logger import get_logger
 from core.utils import load_json, save_json, now_ts
 from core.symbol_scanner import rank_symbols
 from core.optuna_tuner import tune_and_train
-from core.notifier import telegram_send_direct
+from core.notifier import telegram_send
 
 log = get_logger("tune_and_select")
 
 def _notify(msg: str):
     try:
-        telegram_send_direct(msg)
+        ok = telegram_send(msg)
+        if not ok:
+            log.warning("Notify returned False")
     except Exception as e:
         log.warning("Notify failed: %s", e)
 
