@@ -1,0 +1,15 @@
+[Unit]
+Description=KANG_BOT (build 7a0df6abee)
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/kang_bot
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/opt/kang_bot/.env
+ExecStart=/opt/kang_bot/.venv/bin/python run.py --mode live --confirm
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

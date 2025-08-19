@@ -1,0 +1,25 @@
+# Pinned dependencies
+openai>=1.30.0
+pydantic>=2.8.2
+
+# Third-party dependencies
+apscheduler
+joblib
+matplotlib
+numpy
+optuna
+pandas
+plotly
+pybit
+python-dotenv
+python-telegram-bot
+pytz
+requests
+schedule
+scikit-learn
+streamlit
+ta
+twilio
+websocket-client
+websockets
+xgboost

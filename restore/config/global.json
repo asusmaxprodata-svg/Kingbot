@@ -1,0 +1,96 @@
+{
+  "symbol": "BTCUSDT",
+  "max_open_positions": 3,
+  "daily_max_loss_fraction": 0.1,
+  "confidence_threshold": 0.8,
+  "default_tp": 0.02,
+  "default_sl": 0.01,
+  "leverage": "auto",
+  "mode": "hybrid",
+  "timeframes": {
+    "scalping": "5m",
+    "swing": "60m",
+    "hybrid": "15m"
+  },
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT",
+    "ADAUSDT",
+    "DOGEUSDT"
+  ],
+  "auto_pairs": true,
+  "top_n": 3,
+  "risk_per_trade_fraction": 0.01,
+  "loss_streak_pause": 3,
+  "cooldown_minutes_after_loss": 15,
+  "equity_floor": 25,
+  "leverage_cap": {
+    "scalping": 20,
+    "hybrid": 15,
+    "swing": 10,
+    "adaptive": 25
+  },
+  "size_buffer_fraction": 0.05,
+  "simulation_mode": false,
+  "default_timeframe": "15m",
+  "mode_timeframes": {
+    "scalping": "5m",
+    "hybrid": "15m",
+    "swing": "1h",
+    "adaptive": "15m"
+  },
+  "pair_update_interval_min": 15,
+  "leverage_caps": {
+    "scalping": 50,
+    "hybrid": 50,
+    "swing": 20,
+    "adaptive": 50
+  },
+  "alerts": {
+    "enabled": true,
+    "imbalance_pct": 20.0,
+    "spread_bps": 6.0,
+    "atr_sigma": 2.5,
+    "cooldown_sec": 300,
+    "depth_poll_interval_sec": 90
+  },
+  "heartbeat_interval_sec": 7200,
+  "preview_enabled": true,
+  "heartbeat_enabled": true,
+  "hourly_recap_enabled": true,
+  "daily_recap_enabled": true,
+  "auto_tune": {
+    "enabled": false,
+    "hour": 1,
+    "minute": 0,
+    "symbol": "BTCUSDT",
+    "timeframe": "1h",
+    "trials": 120,
+    "chunk": 12,
+    "extra_args": "",
+    "use_auto_pairs": true,
+    "top_n": 2,
+    "symbols": [
+      "BTCUSDT",
+      "ETHUSDT"
+    ],
+    "min_rank_score": 0.0
+  },
+  "llm": {
+    "features": true,
+    "confirm": true,
+    "confirm_min_conf": 0.58,
+    "regime": false,
+    "timeout_ms": 600,
+    "max_tokens": 200,
+    "model": "gpt-4.1-mini"
+  },
+  "pair_select": {
+    "enable_llm": true,
+    "w_quant": 0.75,
+    "w_llm": 0.25
+  }
+}

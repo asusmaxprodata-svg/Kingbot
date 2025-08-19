@@ -1,0 +1,15 @@
+[Unit]
+Description=kang_bot trading loop
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/kang_bot
+ExecStart=%h/kang_bot/scripts/run_bot.sh
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
