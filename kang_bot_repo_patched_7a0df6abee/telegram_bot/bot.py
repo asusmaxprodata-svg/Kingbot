@@ -3,6 +3,16 @@ from telegram import Update, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 from dotenv import load_dotenv
 
+# RBAC helpers
+ADMIN_ID = int(os.getenv("TELEGRAM_ADMIN_USER_ID", "0") or 0)
+ALLOWED_IDS = {int(x) for x in (os.getenv("ALLOWED_USER_IDS", "").split(",") if os.getenv("ALLOWED_USER_IDS") else []) if str(x).strip().isdigit()}
+
+def is_admin(user_id: int) -> bool:
+    return user_id == ADMIN_ID
+
+def is_allowed(user_id: int) -> bool:
+    return is_admin(user_id) or (user_id in ALLOWED_IDS)
+
 from core.logger import get_logger
 from core.config_manager import get_mode, set_mode, get_leverage, set_leverage, set_testnet, set_symbol, get_symbol, add_watchlist, remove_watchlist, get_watchlist, set_auto_pairs, get_auto_pairs, get_pair_update_interval_min, set_pair_update_interval_min, clamp_leverage, get_leverage_cap_for_mode, set_running
 from core.symbol_scanner import rank_symbols
@@ -123,6 +133,9 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await q.edit_message_text(f"Leverage set ke: {val}", reply_markup=build_main_kb_full())
         return
     if data == "toggle_env":
+        if not is_admin(q.from_user.id):
+            await q.answer("Hanya admin.", show_alert=True)
+            return
         state = load_json("data/state.json", {})
         if state.get("testnet", True):
             await q.edit_message_text("Masukkan PIN untuk aktifkan REAL trading (balas dengan: PIN 1234)", reply_markup=build_main_kb_full())
@@ -225,6 +238,9 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
 
     if data == "menu_saldo":
+        if not is_allowed(q.from_user.id):
+            await q.answer("Tidak diizinkan.", show_alert=True)
+            return
         state = load_json("data/state.json", {})
         testnet = state.get("testnet", True)
         try:
@@ -281,6 +297,9 @@ async def on_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         set_leverage("auto" if val=="auto" else int(val))
         await q.edit_message_text(f"Leverage set ke: {val}", reply_markup=build_main_kb_full())
     elif data == "toggle_env":
+        if not is_admin(q.from_user.id):
+            await q.answer("Hanya admin.", show_alert=True)
+            return
         # PIN gate for REAL
         state = load_json("data/state.json", {})
         if state.get("testnet", True):
@@ -407,6 +426,9 @@ async def cmd_leverage(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_allowed(update.effective_user.id):
+        await update.message.reply_text("Tidak diizinkan.")
+        return
     g = load_json("config/global.json", {})
     if g.get("testnet", True):
         set_running(True)
@@ -415,6 +437,9 @@ async def cmd_run(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("RUN REAL hanya via Streamlit (PIN).")
 
 async def cmd_pause(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_allowed(update.effective_user.id):
+        await update.message.reply_text("Tidak diizinkan.")
+        return
     set_running(False)
     await update.message.reply_text("Bot di-pause.")
 
