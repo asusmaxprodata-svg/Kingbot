@@ -5,9 +5,15 @@ services:
     restart: unless-stopped
     env_file:
       - .env
-    command: ["python","run.py","--mode","live","--confirm"]
+    environment:
+      - LOG_JSON=1
+      - METRICS_PORT=9100
+      - HEARTBEAT_PATH=/app/logs/heartbeat.txt
+    command: ["python","-m","kingbot","--mode","live"]
+    ports:
+      - "9100:9100"
     healthcheck:
-      test: ["CMD","python","-c","import importlib,sys; importlib.import_module('run'); print('ok')"]
+      test: ["CMD","python","ops/scripts/healthcheck.py"]
       interval: 30s
       timeout: 5s
       retries: 5

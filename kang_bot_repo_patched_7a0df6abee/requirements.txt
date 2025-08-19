@@ -15,6 +15,7 @@ python-dotenv
 python-telegram-bot
 pytz
 requests
+prometheus-client
 schedule
 scikit-learn
 streamlit
