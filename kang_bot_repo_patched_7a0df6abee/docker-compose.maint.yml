@@ -1,0 +1,13 @@
+version: "3.8"
+services:
+  maint:
+    build: .
+    command: ["python","services/maint.py"]
+    environment:
+      - TZ=Asia/Jakarta
+      - AUTO_MAINT_CRON=0 8 * * MON    # Senin 08:00 WIB
+    env_file:
+      - .env
+    depends_on:
+      - kang_bot
+    restart: unless-stopped

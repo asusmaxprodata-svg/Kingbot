@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["python","run.py","--mode","live","--confirm"]
+    healthcheck:
+      test: ["CMD","python","-c","import importlib,sys; importlib.import_module('run'); print('ok')"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  ui:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    command: ["streamlit","run","streamlit_main.py","--server.port=8501","--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+    depends_on:
+      bot:
+        condition: service_healthy
